@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bean头部 -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:p="http://www.springframework.org/schema/p"
+     xmlns:mvc="http://www.springframework.org/schema/mvc"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:util="http://www.springframework.org/schema/util"
+     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+             http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+             http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+             http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd">
+     
+     <!-- 激活@Controller模式 -->
+     <!--<mvc:annotation-driven />-->
+     <!-- 对包中的所有类进行扫描，以完成Bean创建和自动依赖注入的功能 需要更改 -->
+     <context:component-scan base-package="com.zzcm.log.action" />
+ 
+     <!--<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter" />-->
+    <!--<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"/>-->
+    <!--<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"/>-->
+ 
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix">
+            <value>/WEB-INF/jsp/</value>
+        </property>
+        <property name="suffix">
+            <value>.jsp</value>
+        </property>
+    </bean>
+
+    <!-- 内容协商管理器  -->
+    <!--1、首先检查路径扩展名（如my.pdf）；2、其次检查Parameter（如my?format=pdf）；3、检查Accept Header-->
+    <bean id="contentNegotiationManager" class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+        <!-- 扩展名至mimeType的映射,即 /user.json => application/json -->
+        <!--<property name="favorPathExtension" value="false"/>-->
+        <!--&lt;!&ndash; 用于开启 /userinfo/123?format=json 的支持 &ndash;&gt;-->
+        <!--<property name="favorParameter" value="false"/>-->
+        <!--<property name="parameterName" value="format"/>-->
+        <!--&lt;!&ndash; 是否忽略Accept Header &ndash;&gt;-->
+        <!--<property name="ignoreAcceptHeader" value="false"/>-->
+
+        <property name="mediaTypes"> <!--扩展名到MIME的映射；favorPathExtension, favorParameter是true时起作用  -->
+            <value>
+                json=application/json
+                xml=application/xml
+                html=text/html
+                *=*/*
+            </value>
+        </property>
+    </bean>
+
+    <!-- 返回json 方法一 需要导入 fastjson.jar包 -->
+    <mvc:annotation-driven content-negotiation-manager="contentNegotiationManager">
+        <mvc:message-converters register-defaults="true">
+            <!--<ref bean="stringHttpMessageConverter" />-->
+            <!--<ref bean="fastJsonHttpMessageConverter" />-->
+            <!-- StringHttpMessageConverter编码为UTF-8，防止乱码 -->
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <constructor-arg value="UTF-8"/>
+                <property name = "supportedMediaTypes">
+                    <list>
+                        <bean class="org.springframework.http.MediaType">
+                            <constructor-arg index="0" value="text"/>
+                            <constructor-arg index="1" value="plain"/>
+                            <constructor-arg index="2" value="UTF-8"/>
+                        </bean>
+                        <bean class="org.springframework.http.MediaType">
+                            <constructor-arg index="0" value="*"/>
+                            <constructor-arg index="1" value="*"/>
+                            <constructor-arg index="2" value="UTF-8"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+
+            <!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+            <bean id="fastJsonHttpMessageConverter" class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                        <value>text/plain;charset=utf-8</value>
+                        <value>text/html;charset=utf-8</value>
+                    </list>
+                </property>
+                <property name="features">
+                    <value type="com.alibaba.fastjson.serializer.SerializerFeature">WriteDateUseDateFormat</value>
+                    <!--这个地方加上这个功能吧，能自己配置一些东西，比如时间的格式化，null输出""等等-->
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+    <!--<bean id="fastJsonHttpMessageConverter" class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">-->
+        <!--<property name="supportedMediaTypes">-->
+            <!--<list>-->
+                <!--&lt;!&ndash; 这里顺序不能反，一定先写text/html,不然ie下出现下载提示 &ndash;&gt;-->
+                <!--&lt;!&ndash;<value>text/html;charset=UTF-8</value>&ndash;&gt;-->
+                <!--&lt;!&ndash;<value>application/json;charset=UTF-8</value>&ndash;&gt;-->
+                <!--<value>application/json;charset=UTF-8</value>-->
+                <!--<value>text/plain;charset=utf-8</value>-->
+                <!--<value>text/html;charset=utf-8</value>-->
+            <!--</list>-->
+        <!--</property>-->
+        <!--<property name="features">-->
+            <!--<util:list>-->
+                <!--&lt;!&ndash;-->
+                <!--QuoteFieldNames-输出key时是否使用双引号,默认为true-->
+                <!--WriteMapNullValue-是否输出值为null的字段,默认为false-->
+                <!--WriteNullNumberAsZero-数值字段如果为null,输出为0,而非null-->
+                <!--WriteNullListAsEmpty-List字段如果为null,输出为[],而非null-->
+                <!--WriteNullStringAsEmpty-字符类型字段如果为null,输出为"",而非null-->
+                <!--WriteNullBooleanAsFalse-Boolean字段如果为null,输出为false,而非null-->
+                <!--&ndash;&gt;-->
+                <!--<value>WriteMapNullValue</value>-->
+                <!--<value>QuoteFieldNames</value>-->
+                <!--<value type="com.alibaba.fastjson.serializer.SerializerFeature">WriteDateUseDateFormat</value>-->
+                <!--&lt;!&ndash;<value>WriteDateUseDateFormat</value>&ndash;&gt;-->
+            <!--</util:list>-->
+        <!--</property>-->
+    <!--</bean>-->
+
+    <!-- 返回json 方法二 需要导入 jackson-annotations.jar,jackson-core.jar,jackson-databind.jar-->
+    <!--  <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" />
+     <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+         <property name="messageConverters">
+             <list>
+                 <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                     <property name="supportedMediaTypes">
+                         <list>
+                             <value>text/html; charset=UTF-8</value>
+                             <value>application/json;charset=UTF-8</value>
+                         </list>
+                     </property>
+                 </bean>
+                 <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                     <property name="supportedMediaTypes">
+                         <list>
+                             <value>text/html; charset=UTF-8</value>
+                             <value>application/json;charset=UTF-8</value>
+                         </list>
+                     </property>
+                 </bean>
+             </list>
+         </property>
+     </bean> -->
+
+    <!--<bean id="stringHttpMessageConverter"-->
+          <!--class="org.springframework.http.converter.StringHttpMessageConverter">-->
+        <!--<constructor-arg value="UTF-8" index="0"></constructor-arg>&lt;!&ndash; 避免出现乱码 &ndash;&gt;-->
+        <!--<property name="supportedMediaTypes">-->
+            <!--<list>-->
+                <!--<value>text/plain;charset=UTF-8</value>-->
+            <!--</list>-->
+        <!--</property>-->
+    <!--</bean>-->
+
+</beans>
